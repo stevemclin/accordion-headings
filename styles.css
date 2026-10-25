@@ -1,0 +1,117 @@
+/* ============================================================================
+   Accordion Headings — stylesheet
+   One rotating chevron + full-row click target for heading folding, in all
+   three view modes. Reuses Obsidian's own fold engine (never hides content
+   itself), so the Outline and "Fold all / Unfold all" stay in sync.
+
+   Reading view  → pure CSS (Obsidian's .heading-collapse-indicator owns the
+                   click; we stretch it and draw our own chevron).
+   Live Preview /
+   Source        → the chevron is a CodeMirror widget rendered by main.ts;
+                   this file styles it and hides Obsidian's default
+                   .cm-fold-indicator and .cm-foldPlaceholder ("...").
+   ============================================================================ */
+
+/* Shared chevron glyph (masked SVG so it inherits the theme's muted color). */
+/* --- Reading view --- */
+
+/* Make headings a positioning context so the click-target span fills the row. */
+.markdown-preview-view h1,
+.markdown-preview-view h2,
+.markdown-preview-view h3,
+.markdown-preview-view h4,
+.markdown-preview-view h5,
+.markdown-preview-view h6 {
+  position: relative;
+}
+
+/* Stretch Obsidian's collapse indicator across the whole row = full-row click. */
+.markdown-preview-view .heading-collapse-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Hide Obsidian's built-in "right-triangle" icon — our chevron replaces it. */
+.markdown-preview-view .heading-collapse-indicator .svg-icon {
+  display: none;
+}
+
+/* --- The chevron (reading view: a heading ::after pseudo-element) --- */
+.markdown-preview-view h1::after,
+.markdown-preview-view h2::after,
+.markdown-preview-view h3::after,
+.markdown-preview-view h4::after,
+.markdown-preview-view h5::after,
+.markdown-preview-view h6::after {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.35em;
+  vertical-align: -0.12em;
+  opacity: 0.55;
+  background-color: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>") center / contain no-repeat;
+  transform: rotate(90deg); /* expanded → ▾ */
+  transition: transform 0.15s ease, opacity 0.1s ease;
+  pointer-events: none;
+}
+
+/* Collapsed → ▸ (Obsidian puts is-collapsed on the indicator span). */
+.markdown-preview-view h1:has(.heading-collapse-indicator.is-collapsed)::after,
+.markdown-preview-view h2:has(.heading-collapse-indicator.is-collapsed)::after,
+.markdown-preview-view h3:has(.heading-collapse-indicator.is-collapsed)::after,
+.markdown-preview-view h4:has(.heading-collapse-indicator.is-collapsed)::after,
+.markdown-preview-view h5:has(.heading-collapse-indicator.is-collapsed)::after,
+.markdown-preview-view h6:has(.heading-collapse-indicator.is-collapsed)::after {
+  transform: rotate(0deg);
+  opacity: 1;
+}
+
+.markdown-preview-view h1:hover::after,
+.markdown-preview-view h2:hover::after,
+.markdown-preview-view h3:hover::after,
+.markdown-preview-view h4:hover::after,
+.markdown-preview-view h5:hover::after,
+.markdown-preview-view h6:hover::after {
+  opacity: 1;
+}
+
+/* --- Live Preview / Source --- */
+
+/* Hide Obsidian's default left fold indicator and the "..." placeholder. */
+.markdown-source-view.mod-cm6 .cm-fold-indicator,
+.markdown-source-view.mod-cm6 .cm-foldPlaceholder {
+  display: none;
+}
+
+/* The chevron widget rendered by main.ts. */
+.markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.35em;
+  vertical-align: -0.12em;
+  opacity: 0.55;
+  cursor: pointer;
+  background-color: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>") center / contain no-repeat;
+  transform: rotate(90deg); /* expanded → ▾ */
+  transition: transform 0.15s ease, opacity 0.1s ease;
+}
+
+.markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron {
+  opacity: 1;
+}
+
+.markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
+  transform: rotate(0deg); /* collapsed → ▸ */
+  opacity: 1;
+}

@@ -1,0 +1,16 @@
+# npm
+node_modules
+
+# Don't include the compiled main.js in the repo (it's a build artifact).
+main.js
+
+# Exclude sourcemaps
+*.map
+
+# macOS Finder
+.DS_Store
+
+# IDE
+.idea
+.vscode
+*.iml
