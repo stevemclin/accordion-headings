@@ -12,9 +12,11 @@ import {
   foldEffect,
   foldable,
   foldState,
-  syntaxTree,
   unfoldEffect,
 } from "@codemirror/language";
+
+/** ATX headings (`#`–`######` followed by whitespace). */
+const HEADING_RE = /^(#{1,6})\s/;
 
 /**
  * Inline chevron rendered right after a heading's text in Source / Live
@@ -59,19 +61,23 @@ class ChevronWidget extends WidgetType {
 }
 
 /**
- * ATX heading level (1-6) for a 1-based line, or null when it isn't a heading.
- * Uses the live syntax tree, so a `#` line inside a code block is ignored.
+ * The foldable section range for an ATX heading, or null when the line is not
+ * a heading (or has no content to fold).
+ *
+ * A heading's fold covers the content BELOW it, so we require `range.from` to
+ * be past the heading line — this also rejects a `#` line inside a code block,
+ * whose foldable range (if any) starts at the fence, before this line.
  */
-function headingLevelAt(state: EditorState, lineNumber1based: number): number | null {
+function getHeadingFoldRange(
+  state: EditorState,
+  lineNumber1based: number,
+): { from: number; to: number } | null {
   const line = state.doc.line(lineNumber1based);
-  let node = syntaxTree(state).resolveInner(line.from + 1, 1);
-  for (;;) {
-    const m = /^ATXHeading([1-6])$/.exec(node.name);
-    if (m) return Number(m[1]);
-    const parent = node.parent;
-    if (!parent) return null;
-    node = parent;
-  }
+  if (!HEADING_RE.test(line.text)) return null;
+
+  const range = foldable(state, line.from, line.to);
+  if (!range || range.from <= line.to) return null;
+  return range;
 }
 
 /** True when a folded range fully covers `range`. */
@@ -97,8 +103,7 @@ function toggleHeadingFold(view: EditorView, n: number): void {
   const state = view.state;
   if (!state.field(foldState, false)) return;
 
-  const line = state.doc.line(n);
-  const range = foldable(state, line.from, line.to);
+  const range = getHeadingFoldRange(state, n);
   if (!range) return;
 
   if (isRangeFolded(state, range)) {
@@ -133,18 +138,20 @@ class AccordionViewPlugin {
       const start = view.state.doc.lineAt(range.from).number;
       const end = view.state.doc.lineAt(range.to).number;
       for (let n = start; n <= end; n++) {
-        if (headingLevelAt(view.state, n) === null) continue;
-        const line = view.state.doc.line(n);
-        const foldRange = foldable(view.state, line.from, line.to);
-        if (!foldRange) continue; // no content to fold
+        const foldRange = getHeadingFoldRange(view.state, n);
+        if (!foldRange) continue;
 
+        const line = view.state.doc.line(n);
         const collapsed = isRangeFolded(view.state, foldRange);
+
+        // side: -1 places the widget BEFORE the newline, i.e. inline at the
+        // end of the heading text (side: 1 would land on the next line).
         builder.add(
           line.to,
           line.to,
           Decoration.widget({
             widget: new ChevronWidget(collapsed, () => toggleHeadingFold(view, n)),
-            side: 1,
+            side: -1,
           }),
         );
       }
@@ -174,7 +181,7 @@ export default class AccordionHeadingsPlugin extends Plugin {
     if (pos == null) return false;
 
     const line = view.state.doc.lineAt(pos);
-    if (headingLevelAt(view.state, line.number) === null) return false;
+    if (getHeadingFoldRange(view.state, line.number) === null) return false;
 
     // Clicking the heading TEXT keeps normal editing; only the empty area
     // to the right of the text toggles the fold.
