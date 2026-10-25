@@ -150,6 +150,7 @@ function buildDynamicCss(settings: AccordionSettings): string {
 
   const rv = enabled.map((l) => `.markdown-preview-view h${l}`).join(",\n");
   const rvIndicator = enabled.map((l) => `.markdown-preview-view h${l} .heading-collapse-indicator`).join(",\n");
+  const rvIndicatorIcon = enabled.map((l) => `.markdown-preview-view h${l} .heading-collapse-indicator .svg-icon`).join(",\n");
   const rvAfter = enabled.map((l) => `.markdown-preview-view h${l}::after`).join(",\n");
   const rvCollapsed = enabled.map((l) => `.markdown-preview-view h${l}:has(.heading-collapse-indicator.is-collapsed)::after`).join(",\n");
   const rvHover = enabled.map((l) => `.markdown-preview-view h${l}:hover::after`).join(",\n");
@@ -169,7 +170,7 @@ ${rvIndicator} {
   padding: 0;
   cursor: pointer;
 }
-${rvIndicator} .svg-icon { display: none; }
+${rvIndicatorIcon} { display: none; }
 
 ${rvAfter} {
   content: "";
