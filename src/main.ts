@@ -64,9 +64,10 @@ class ChevronWidget extends WidgetType {
  * The foldable section range for an ATX heading, or null when the line is not
  * a heading (or has no content to fold).
  *
- * A heading's fold covers the content BELOW it, so we require `range.from` to
- * be past the heading line — this also rejects a `#` line inside a code block,
- * whose foldable range (if any) starts at the fence, before this line.
+ * Obsidian's `foldable()` returns `from === line.to` (the newline at the end
+ * of the heading) for a heading. A `#` line inside a code block instead yields
+ * a range whose `from` lies BEFORE the line (or null), so `from < line.from`
+ * rejects it.
  */
 function getHeadingFoldRange(
   state: EditorState,
@@ -76,7 +77,7 @@ function getHeadingFoldRange(
   if (!HEADING_RE.test(line.text)) return null;
 
   const range = foldable(state, line.from, line.to);
-  if (!range || range.from <= line.to) return null;
+  if (!range || range.from < line.from) return null;
   return range;
 }
 
