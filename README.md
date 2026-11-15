@@ -1,37 +1,87 @@
 # Accordion Headings
 
-Website-style accordion folding for Obsidian headings, in all three view modes.
+Website-style accordion folding for Obsidian headings. One chevron that stays in
+the same place in both states, and a full-width heading row you can click anywhere.
 
-- **One chevron** inline after the heading text (where the `…` used to be).
-- **Same button for both states** — it rotates in place (`▾` expanded, `▸` collapsed).
-- **Full-row click target** in Reading view; the empty area of the row is
-  clickable in Live Preview/Source (heading text stays editable).
+Obsidian's built-in heading fold puts a chevron on the left that disappears when
+the section is expanded, plus a separate `…` on the right when it is collapsed:
+two affordances for one control, in two different places. This plugin replaces
+that with the standard accordion pattern used across the web:
 
-Folding is driven by Obsidian's own fold engine (`getFoldInfo` / `setFoldInfo`),
-so the Outline panel and "Fold all / Unfold all" remain in sync.
+- **One chevron**, inline after the heading text — right where the `…` used to be.
+- **The same control in both states.** It rotates in place: `▾` expanded,
+  `▸` collapsed. Nothing appears or disappears.
+- **Full-row click target.** In Reading view the whole heading row clicks.
+  In Live Preview and Source the empty area to the right of the heading clicks,
+  while the heading text itself stays editable.
+- **Configurable** — icon style, visibility, and which heading levels are affected.
+
+## Install
+
+### Community plugins
+
+Once the plugin is listed in the directory: **Settings → Community plugins →
+Browse**, search for **Accordion Headings**, install, enable.
+
+### Beta (via BRAT)
+
+1. Install and enable [BRAT](https://github.com/TfTHacker/obsidian42-brat).
+2. Run **BRAT: Add a beta plugin for testing** and enter
+   `stevemclin/accordion-headings`.
+3. Enable **Accordion Headings** in **Settings → Community plugins**.
+
+### Manual
+
+Download `main.js`, `manifest.json`, and `styles.css` from the
+[latest release](https://github.com/stevemclin/accordion-headings/releases/latest)
+and copy them into `<your-vault>/.obsidian/plugins/accordion-headings/`. Then
+enable the plugin in **Settings → Community plugins**.
+
+## Settings
+
+| Setting | Options | Default |
+|---|---|---|
+| Icon style | Chevron, Plus / minus | Chevron |
+| Visibility | Always visible, On hover | Always visible |
+| Heading levels | H1 – H6, one toggle each | All enabled |
 
 ## How it works
 
+The plugin does not implement folding. It drives Obsidian's own fold state and
+changes only the visual affordance, so the Outline panel and **Fold all /
+Unfold all** stay in sync — there is a single source of truth for whether a
+section is collapsed.
+
 | Mode | Mechanism |
-|------|-----------|
-| Reading view | Pure CSS — Obsidian's `.heading-collapse-indicator` owns the click; we stretch it full-width and draw our own chevron. |
-| Live Preview / Source | A CodeMirror view plugin renders the chevron and toggles Obsidian's fold state. |
+|---|---|
+| Reading view | Obsidian already renders a `.heading-collapse-indicator` inside each heading that owns the fold click. The plugin stretches that hit area to cover the whole row, hides its default icon, and draws the chevron on the heading's `::after` with a CSS mask. Collapsed state is read from `.heading-collapse-indicator.is-collapsed` using `:has()`. |
+| Live Preview / Source | A CodeMirror 6 `ViewPlugin` places a chevron widget at the end of each heading line. Toggling reads the section range from `@codemirror/language`'s `foldable()`, tests it against `foldedRanges()`, then dispatches `foldEffect` or `unfoldEffect` — the same fold state Obsidian's own `.cm-fold-indicator` writes. |
+
+The stylesheet is generated at runtime from your settings, so a change applies
+immediately without reloading.
+
+## Limitations
+
+- **ATX headings only** (`#`–`######`). Setext headings (`===` / `---` underlines)
+  keep Obsidian's default behaviour.
+- **Live Preview:** clicking the heading *text* places the cursor instead of
+  folding. This is deliberate — the plugin lives inside an editor, and stealing
+  text clicks would make headings awkward to edit. Use the chevron, or the empty
+  space to its right.
+- **Reading view** depends on CSS `:has()`, which is available in every Obsidian
+  version this plugin supports.
 
 ## Development
 
 ```bash
 npm install
-npm run build     # typecheck + bundle main.js
-npm run deploy    # copy main.js/manifest.json/styles.css into the GTD vault
+npm run build                                        # typecheck + bundle main.js
+OBSIDIAN_VAULT="/path/to/your/vault" npm run deploy  # copy build into a test vault
 ```
 
-Enable the plugin in **Settings → Community plugins**, then disable the older
-CSS snippet (`accordion-headings.css`) if you had enabled it — the plugin's
-stylesheet now covers Reading view too.
+`main.js` is a build artifact and is not committed. Releases are produced by
+`.github/workflows/release.yml` when a version tag is pushed.
 
-## Notes / limitations
+## License
 
-- Live Preview: clicking the **heading text** still places the cursor to edit;
-  click the chevron or the empty area to the right to fold.
-- ATX headings (`#`–`######`) are enhanced; setext headings keep Obsidian's
-  default behaviour.
+[MIT](LICENSE)

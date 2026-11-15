@@ -242,6 +242,13 @@ export default class AccordionHeadingsPlugin extends Plugin {
     this.addSettingTab(new AccordionSettingTab(this.app, this));
   }
 
+  onunload(): void {
+    // The generated stylesheet lives outside Obsidian's lifecycle, so remove it
+    // explicitly or it survives the plugin being disabled.
+    this.styleEl?.remove();
+    this.styleEl = null;
+  }
+
   private buildViewPlugin() {
     const getSettings = () => this.settings;
 
