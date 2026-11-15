@@ -8,21 +8,15 @@
  *   ah-icon-plus          plus / minus icon
  *   ah-vis-always         indicator always visible (default)
  *   ah-vis-hover          indicator only on hover
+ *
+ * Both icons are drawn with borders and gradients rather than masks, so they
+ * need no SVG data URIs and no partially-supported CSS features. They inherit
+ * `color`, so themes apply automatically.
  */
 
 body {
   --ah-idle-opacity: 0.55;
-  --ah-rotate-expanded: rotate(90deg);
-  --ah-rotate-collapsed: rotate(0deg);
-  --ah-mask-expanded: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>");
-  --ah-mask-collapsed: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>");
-}
-
-body.ah-icon-plus {
-  --ah-rotate-expanded: none;
-  --ah-rotate-collapsed: none;
-  --ah-mask-expanded: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='5' y1='12' x2='19' y2='12'/></svg>");
-  --ah-mask-collapsed: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg>");
+  --ah-stroke: 2px;
 }
 
 body.ah-vis-hover {
@@ -66,53 +60,8 @@ body.ah-h6 .markdown-preview-view h6 .heading-collapse-indicator .svg-icon {
   display: none;
 }
 
-body.ah-h1 .markdown-preview-view h1::after,
-body.ah-h2 .markdown-preview-view h2::after,
-body.ah-h3 .markdown-preview-view h3::after,
-body.ah-h4 .markdown-preview-view h4::after,
-body.ah-h5 .markdown-preview-view h5::after,
-body.ah-h6 .markdown-preview-view h6::after {
-  content: "";
-  display: inline-block;
-  width: 0.85em;
-  height: 0.85em;
-  margin-left: 0.35em;
-  vertical-align: -0.12em;
-  opacity: var(--ah-idle-opacity);
-  background-color: var(--text-muted);
-  -webkit-mask: var(--ah-mask-expanded) center / contain no-repeat;
-  mask: var(--ah-mask-expanded) center / contain no-repeat;
-  transform: var(--ah-rotate-expanded);
-  transition: transform 0.15s ease, opacity 0.1s ease;
-  pointer-events: none;
-}
+/* ---------- Live Preview / Source: hide Obsidian's own affordances ---------- */
 
-body.ah-h1 .markdown-preview-view h1:hover::after,
-body.ah-h2 .markdown-preview-view h2:hover::after,
-body.ah-h3 .markdown-preview-view h3:hover::after,
-body.ah-h4 .markdown-preview-view h4:hover::after,
-body.ah-h5 .markdown-preview-view h5:hover::after,
-body.ah-h6 .markdown-preview-view h6:hover::after {
-  opacity: 1;
-}
-
-/* Collapsed state lives on the indicator, not the heading. */
-body.ah-h1 .markdown-preview-view h1:has(.heading-collapse-indicator.is-collapsed)::after,
-body.ah-h2 .markdown-preview-view h2:has(.heading-collapse-indicator.is-collapsed)::after,
-body.ah-h3 .markdown-preview-view h3:has(.heading-collapse-indicator.is-collapsed)::after,
-body.ah-h4 .markdown-preview-view h4:has(.heading-collapse-indicator.is-collapsed)::after,
-body.ah-h5 .markdown-preview-view h5:has(.heading-collapse-indicator.is-collapsed)::after,
-body.ah-h6 .markdown-preview-view h6:has(.heading-collapse-indicator.is-collapsed)::after {
-  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
-  mask: var(--ah-mask-collapsed) center / contain no-repeat;
-  transform: var(--ah-rotate-collapsed);
-  opacity: 1;
-}
-
-/* ---------- Live Preview / Source ---------- */
-
-/* Hide Obsidian's default fold indicator and the "..." placeholder on the
-   levels this plugin handles; the chevron widget replaces them. */
 body.ah-h1 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 .cm-fold-indicator,
 body.ah-h2 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 .cm-fold-indicator,
 body.ah-h3 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 .cm-fold-indicator,
@@ -128,28 +77,114 @@ body.ah-h6 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-foldPlace
   display: none;
 }
 
-.markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+/* ---------- Icon: chevron ---------- */
+
+body.ah-icon-chevron.ah-h1 .markdown-preview-view h1::after,
+body.ah-icon-chevron.ah-h2 .markdown-preview-view h2::after,
+body.ah-icon-chevron.ah-h3 .markdown-preview-view h3::after,
+body.ah-icon-chevron.ah-h4 .markdown-preview-view h4::after,
+body.ah-icon-chevron.ah-h5 .markdown-preview-view h5::after,
+body.ah-icon-chevron.ah-h6 .markdown-preview-view h6::after,
+body.ah-icon-chevron .markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+  content: "";
+  display: inline-block;
+  box-sizing: border-box;
+  width: 0.42em;
+  height: 0.42em;
+  margin-left: 0.5em;
+  vertical-align: 0.1em;
+  border-right: var(--ah-stroke) solid currentColor;
+  border-bottom: var(--ah-stroke) solid currentColor;
+  color: var(--text-muted);
+  opacity: var(--ah-idle-opacity);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease, opacity 0.1s ease, color 0.1s ease;
+  pointer-events: none;
+}
+
+body.ah-icon-chevron .markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* collapsed: Obsidian puts `is-collapsed` on the section container, which is an
+   ancestor of the heading, so a descendant selector is enough. */
+body.ah-icon-chevron.ah-h1 .markdown-preview-view .is-collapsed h1::after,
+body.ah-icon-chevron.ah-h2 .markdown-preview-view .is-collapsed h2::after,
+body.ah-icon-chevron.ah-h3 .markdown-preview-view .is-collapsed h3::after,
+body.ah-icon-chevron.ah-h4 .markdown-preview-view .is-collapsed h4::after,
+body.ah-icon-chevron.ah-h5 .markdown-preview-view .is-collapsed h5::after,
+body.ah-icon-chevron.ah-h6 .markdown-preview-view .is-collapsed h6::after,
+body.ah-icon-chevron .markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
+  transform: rotate(-45deg);
+  opacity: 1;
+  color: var(--text-normal);
+}
+
+body.ah-icon-chevron.ah-h1 .markdown-preview-view h1:hover::after,
+body.ah-icon-chevron.ah-h2 .markdown-preview-view h2:hover::after,
+body.ah-icon-chevron.ah-h3 .markdown-preview-view h3:hover::after,
+body.ah-icon-chevron.ah-h4 .markdown-preview-view h4:hover::after,
+body.ah-icon-chevron.ah-h5 .markdown-preview-view h5:hover::after,
+body.ah-icon-chevron.ah-h6 .markdown-preview-view h6:hover::after,
+body.ah-icon-chevron .markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron {
+  opacity: 1;
+  color: var(--text-normal);
+}
+
+/* ---------- Icon: plus / minus ---------- */
+
+body.ah-icon-plus.ah-h1 .markdown-preview-view h1::after,
+body.ah-icon-plus.ah-h2 .markdown-preview-view h2::after,
+body.ah-icon-plus.ah-h3 .markdown-preview-view h3::after,
+body.ah-icon-plus.ah-h4 .markdown-preview-view h4::after,
+body.ah-icon-plus.ah-h5 .markdown-preview-view h5::after,
+body.ah-icon-plus.ah-h6 .markdown-preview-view h6::after,
+body.ah-icon-plus .markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+  content: "";
   display: inline-block;
   width: 0.85em;
   height: 0.85em;
   margin-left: 0.35em;
   vertical-align: -0.12em;
+  color: var(--text-muted);
   opacity: var(--ah-idle-opacity);
+  /* expanded state is a minus: one horizontal bar */
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: center;
+  background-size: 100% var(--ah-stroke);
+  background-repeat: no-repeat;
+  transition: opacity 0.1s ease, color 0.1s ease;
+  pointer-events: none;
+}
+
+body.ah-icon-plus .markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+  pointer-events: auto;
   cursor: pointer;
-  background-color: var(--text-muted);
-  -webkit-mask: var(--ah-mask-expanded) center / contain no-repeat;
-  mask: var(--ah-mask-expanded) center / contain no-repeat;
-  transform: var(--ah-rotate-expanded);
-  transition: transform 0.15s ease, opacity 0.1s ease;
 }
 
-.markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron {
+/* collapsed state is a plus: add the vertical bar */
+body.ah-icon-plus.ah-h1 .markdown-preview-view .is-collapsed h1::after,
+body.ah-icon-plus.ah-h2 .markdown-preview-view .is-collapsed h2::after,
+body.ah-icon-plus.ah-h3 .markdown-preview-view .is-collapsed h3::after,
+body.ah-icon-plus.ah-h4 .markdown-preview-view .is-collapsed h4::after,
+body.ah-icon-plus.ah-h5 .markdown-preview-view .is-collapsed h5::after,
+body.ah-icon-plus.ah-h6 .markdown-preview-view .is-collapsed h6::after,
+body.ah-icon-plus .markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
+  background-image: linear-gradient(currentColor, currentColor),
+    linear-gradient(currentColor, currentColor);
+  background-size: 100% var(--ah-stroke), var(--ah-stroke) 100%;
   opacity: 1;
+  color: var(--text-normal);
 }
 
-.markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
-  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
-  mask: var(--ah-mask-collapsed) center / contain no-repeat;
-  transform: var(--ah-rotate-collapsed);
+body.ah-icon-plus.ah-h1 .markdown-preview-view h1:hover::after,
+body.ah-icon-plus.ah-h2 .markdown-preview-view h2:hover::after,
+body.ah-icon-plus.ah-h3 .markdown-preview-view h3:hover::after,
+body.ah-icon-plus.ah-h4 .markdown-preview-view h4:hover::after,
+body.ah-icon-plus.ah-h5 .markdown-preview-view h5:hover::after,
+body.ah-icon-plus.ah-h6 .markdown-preview-view h6:hover::after,
+body.ah-icon-plus .markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron {
   opacity: 1;
+  color: var(--text-normal);
 }
