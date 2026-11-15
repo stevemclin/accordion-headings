@@ -1,6 +1,6 @@
 {
   "name": "accordion-headings",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Website-style accordion folding for headings (Reading, Live Preview, Source).",
   "main": "main.js",
   "scripts": {

@@ -399,7 +399,7 @@ class AccordionSettingTab extends PluginSettingTab {
           }),
       );
 
-    containerEl.createEl("h3", { text: "Heading levels" });
+    new Setting(containerEl).setName("Heading levels").setHeading();
     containerEl.createEl("p", {
       text: "Which heading levels get the accordion fold indicator.",
     });
