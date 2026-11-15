@@ -57,8 +57,9 @@ section is collapsed.
 | Reading view | Obsidian already renders a `.heading-collapse-indicator` inside each heading that owns the fold click. The plugin stretches that hit area to cover the whole row, hides its default icon, and draws the chevron on the heading's `::after` with a CSS mask. Collapsed state is read from `.heading-collapse-indicator.is-collapsed` using `:has()`. |
 | Live Preview / Source | A CodeMirror 6 `ViewPlugin` places a chevron widget at the end of each heading line. Toggling reads the section range from `@codemirror/language`'s `foldable()`, tests it against `foldedRanges()`, then dispatches `foldEffect` or `unfoldEffect` — the same fold state Obsidian's own `.cm-fold-indicator` writes. |
 
-The stylesheet is generated at runtime from your settings, so a change applies
-immediately without reloading.
+All styling lives in `styles.css` — the plugin never injects CSS. Your settings are
+applied by toggling classes on `<body>` (`ah-h1`…`ah-h6`, `ah-icon-plus`,
+`ah-vis-hover`), so a change takes effect immediately without a reload.
 
 ## Limitations
 

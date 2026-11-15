@@ -1,7 +1,155 @@
 /* Accordion Headings — static stylesheet.
  *
- * All accordion styling (chevron icon, visibility, per-level rules) is
- * generated at runtime from the plugin settings and injected as a <style>
- * element by main.ts. This file intentionally contains no rules; it exists
- * so Obsidian's plugin loader has a stable styles.css to pick up.
+ * Every rule here is always present. The plugin only toggles classes on <body>
+ * to select which variants apply, so no CSS is injected at runtime:
+ *
+ *   ah-h1 .. ah-h6        heading levels that get the accordion affordance
+ *   ah-icon-chevron       chevron icon            (default)
+ *   ah-icon-plus          plus / minus icon
+ *   ah-vis-always         indicator always visible (default)
+ *   ah-vis-hover          indicator only on hover
  */
+
+body {
+  --ah-idle-opacity: 0.55;
+  --ah-rotate-expanded: rotate(90deg);
+  --ah-rotate-collapsed: rotate(0deg);
+  --ah-mask-expanded: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>");
+  --ah-mask-collapsed: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='9 18 15 12 9 6'/></svg>");
+}
+
+body.ah-icon-plus {
+  --ah-rotate-expanded: none;
+  --ah-rotate-collapsed: none;
+  --ah-mask-expanded: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='5' y1='12' x2='19' y2='12'/></svg>");
+  --ah-mask-collapsed: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg>");
+}
+
+body.ah-vis-hover {
+  --ah-idle-opacity: 0;
+}
+
+/* ---------- Reading view ---------- */
+
+body.ah-h1 .markdown-preview-view h1,
+body.ah-h2 .markdown-preview-view h2,
+body.ah-h3 .markdown-preview-view h3,
+body.ah-h4 .markdown-preview-view h4,
+body.ah-h5 .markdown-preview-view h5,
+body.ah-h6 .markdown-preview-view h6 {
+  position: relative;
+}
+
+/* Obsidian's own indicator already owns the fold click; stretch it over the
+   whole row and hide its default icon. */
+body.ah-h1 .markdown-preview-view h1 .heading-collapse-indicator,
+body.ah-h2 .markdown-preview-view h2 .heading-collapse-indicator,
+body.ah-h3 .markdown-preview-view h3 .heading-collapse-indicator,
+body.ah-h4 .markdown-preview-view h4 .heading-collapse-indicator,
+body.ah-h5 .markdown-preview-view h5 .heading-collapse-indicator,
+body.ah-h6 .markdown-preview-view h6 .heading-collapse-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+body.ah-h1 .markdown-preview-view h1 .heading-collapse-indicator .svg-icon,
+body.ah-h2 .markdown-preview-view h2 .heading-collapse-indicator .svg-icon,
+body.ah-h3 .markdown-preview-view h3 .heading-collapse-indicator .svg-icon,
+body.ah-h4 .markdown-preview-view h4 .heading-collapse-indicator .svg-icon,
+body.ah-h5 .markdown-preview-view h5 .heading-collapse-indicator .svg-icon,
+body.ah-h6 .markdown-preview-view h6 .heading-collapse-indicator .svg-icon {
+  display: none;
+}
+
+body.ah-h1 .markdown-preview-view h1::after,
+body.ah-h2 .markdown-preview-view h2::after,
+body.ah-h3 .markdown-preview-view h3::after,
+body.ah-h4 .markdown-preview-view h4::after,
+body.ah-h5 .markdown-preview-view h5::after,
+body.ah-h6 .markdown-preview-view h6::after {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.35em;
+  vertical-align: -0.12em;
+  opacity: var(--ah-idle-opacity);
+  background-color: var(--text-muted);
+  -webkit-mask: var(--ah-mask-expanded) center / contain no-repeat;
+  mask: var(--ah-mask-expanded) center / contain no-repeat;
+  transform: var(--ah-rotate-expanded);
+  transition: transform 0.15s ease, opacity 0.1s ease;
+  pointer-events: none;
+}
+
+body.ah-h1 .markdown-preview-view h1:hover::after,
+body.ah-h2 .markdown-preview-view h2:hover::after,
+body.ah-h3 .markdown-preview-view h3:hover::after,
+body.ah-h4 .markdown-preview-view h4:hover::after,
+body.ah-h5 .markdown-preview-view h5:hover::after,
+body.ah-h6 .markdown-preview-view h6:hover::after {
+  opacity: 1;
+}
+
+/* Collapsed state lives on the indicator, not the heading. */
+body.ah-h1 .markdown-preview-view h1:has(.heading-collapse-indicator.is-collapsed)::after,
+body.ah-h2 .markdown-preview-view h2:has(.heading-collapse-indicator.is-collapsed)::after,
+body.ah-h3 .markdown-preview-view h3:has(.heading-collapse-indicator.is-collapsed)::after,
+body.ah-h4 .markdown-preview-view h4:has(.heading-collapse-indicator.is-collapsed)::after,
+body.ah-h5 .markdown-preview-view h5:has(.heading-collapse-indicator.is-collapsed)::after,
+body.ah-h6 .markdown-preview-view h6:has(.heading-collapse-indicator.is-collapsed)::after {
+  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  transform: var(--ah-rotate-collapsed);
+  opacity: 1;
+}
+
+/* ---------- Live Preview / Source ---------- */
+
+/* Hide Obsidian's default fold indicator and the "..." placeholder on the
+   levels this plugin handles; the chevron widget replaces them. */
+body.ah-h1 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 .cm-fold-indicator,
+body.ah-h2 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 .cm-fold-indicator,
+body.ah-h3 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 .cm-fold-indicator,
+body.ah-h4 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-4 .cm-fold-indicator,
+body.ah-h5 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-5 .cm-fold-indicator,
+body.ah-h6 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-fold-indicator,
+body.ah-h1 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 .cm-foldPlaceholder,
+body.ah-h2 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 .cm-foldPlaceholder,
+body.ah-h3 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 .cm-foldPlaceholder,
+body.ah-h4 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-4 .cm-foldPlaceholder,
+body.ah-h5 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-5 .cm-foldPlaceholder,
+body.ah-h6 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-foldPlaceholder {
+  display: none;
+}
+
+.markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.35em;
+  vertical-align: -0.12em;
+  opacity: var(--ah-idle-opacity);
+  cursor: pointer;
+  background-color: var(--text-muted);
+  -webkit-mask: var(--ah-mask-expanded) center / contain no-repeat;
+  mask: var(--ah-mask-expanded) center / contain no-repeat;
+  transform: var(--ah-rotate-expanded);
+  transition: transform 0.15s ease, opacity 0.1s ease;
+}
+
+.markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron {
+  opacity: 1;
+}
+
+.markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
+  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  transform: var(--ah-rotate-collapsed);
+  opacity: 1;
+}

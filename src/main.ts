@@ -4,6 +4,9 @@ import {
   Plugin,
   PluginSettingTab,
   Setting,
+  SettingDefinitionItem,
+  SettingGroupItem,
+  WorkspaceWindow,
 } from "obsidian";
 import { EditorState, RangeSetBuilder, StateEffect } from "@codemirror/state";
 import {
@@ -19,19 +22,30 @@ import { foldEffect, foldable, foldState, unfoldEffect } from "@codemirror/langu
 /** ATX headings (`#`–`######` followed by whitespace). */
 const HEADING_RE = /^(#{1,6})\s/;
 
-/** Build a masked-SVG data URI (theme-coloured via `background-color`). */
-const svgMask = (body: string): string =>
-  `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>${body}</svg>")`;
-
-const CHEVRON_RIGHT = svgMask("<polyline points='9 18 15 12 9 6'/>");
-const PLUS = svgMask("<line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/>");
-const MINUS = svgMask("<line x1='5' y1='12' x2='19' y2='12'/>");
+/**
+ * All styling lives in styles.css and is gated by these classes on <body>.
+ * The plugin only toggles classes, so no CSS is injected at runtime.
+ */
+const BODY_CLASSES = [
+  "ah-h1",
+  "ah-h2",
+  "ah-h3",
+  "ah-h4",
+  "ah-h5",
+  "ah-h6",
+  "ah-icon-chevron",
+  "ah-icon-plus",
+  "ah-vis-always",
+  "ah-vis-hover",
+] as const;
 
 export interface AccordionSettings {
   icon: "chevron" | "plus";
   visibility: "always" | "hover";
   levels: { h1: boolean; h2: boolean; h3: boolean; h4: boolean; h5: boolean; h6: boolean };
 }
+
+type LevelKey = keyof AccordionSettings["levels"];
 
 const DEFAULT_SETTINGS: AccordionSettings = {
   icon: "chevron",
@@ -51,12 +65,14 @@ class ChevronWidget extends WidgetType {
   }
 
   toDOM(_view: EditorView): HTMLElement {
-    const el = document.createElement("span");
-    el.className =
-      "accordion-headings-chevron" + (this.collapsed ? " is-collapsed" : "");
-    el.setAttribute("role", "button");
-    el.setAttribute("tabindex", "-1");
-    el.setAttribute("aria-label", this.collapsed ? "Expand section" : "Collapse section");
+    const el = createSpan({
+      cls: "accordion-headings-chevron" + (this.collapsed ? " is-collapsed" : ""),
+      attr: {
+        role: "button",
+        tabindex: "-1",
+        "aria-label": this.collapsed ? "Expand section" : "Collapse section",
+      },
+    });
 
     el.addEventListener("mousedown", (e) => {
       e.preventDefault();
@@ -92,7 +108,7 @@ function getHeadingFoldRange(
   const line = state.doc.line(lineNumber1based);
   const m = HEADING_RE.exec(line.text);
   if (!m) return null;
-  const levelKey = `h${m[1].length}` as keyof AccordionSettings["levels"];
+  const levelKey = `h${m[1].length}` as LevelKey;
   if (!settings.levels[levelKey]) return null;
 
   const range = foldable(state, line.from, line.to);
@@ -134,103 +150,24 @@ function toggleHeadingFold(
   }
 }
 
-/** Generate the stylesheet for the current settings. */
-function buildDynamicCss(settings: AccordionSettings): string {
-  const enabled = [1, 2, 3, 4, 5, 6].filter(
-    (l) => settings.levels[`h${l}` as keyof AccordionSettings["levels"]],
-  );
-  if (enabled.length === 0) return "";
-
-  const chevron = settings.icon === "chevron";
-  const baseMask = chevron ? CHEVRON_RIGHT : MINUS;
-  const collapsedMask = chevron ? CHEVRON_RIGHT : PLUS;
-  const baseTransform = chevron ? "rotate(90deg)" : "none";
-  const collapsedTransform = chevron ? "rotate(0deg)" : "none";
-  const idleOpacity = settings.visibility === "always" ? "0.55" : "0";
-
-  const rv = enabled.map((l) => `.markdown-preview-view h${l}`).join(",\n");
-  const rvIndicator = enabled.map((l) => `.markdown-preview-view h${l} .heading-collapse-indicator`).join(",\n");
-  const rvIndicatorIcon = enabled.map((l) => `.markdown-preview-view h${l} .heading-collapse-indicator .svg-icon`).join(",\n");
-  const rvAfter = enabled.map((l) => `.markdown-preview-view h${l}::after`).join(",\n");
-  const rvCollapsed = enabled.map((l) => `.markdown-preview-view h${l}:has(.heading-collapse-indicator.is-collapsed)::after`).join(",\n");
-  const rvHover = enabled.map((l) => `.markdown-preview-view h${l}:hover::after`).join(",\n");
-
-  const lpHide = enabled.map((l) => `.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-${l} .cm-fold-indicator`).join(",\n");
-  const lpHidePlaceholder = enabled.map((l) => `.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-${l} .cm-foldPlaceholder`).join(",\n");
-
-  return `
-/* Reading view */
-${rv} { position: relative; }
-${rvIndicator} {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-}
-${rvIndicatorIcon} { display: none; }
-
-${rvAfter} {
-  content: "";
-  display: inline-block;
-  width: 0.85em;
-  height: 0.85em;
-  margin-left: 0.35em;
-  vertical-align: -0.12em;
-  opacity: ${idleOpacity};
-  background-color: var(--text-muted);
-  -webkit-mask: ${baseMask} center / contain no-repeat;
-  mask: ${baseMask} center / contain no-repeat;
-  transform: ${baseTransform};
-  transition: transform 0.15s ease, opacity 0.1s ease;
-  pointer-events: none;
-}
-${rvCollapsed} {
-  -webkit-mask: ${collapsedMask} center / contain no-repeat;
-  mask: ${collapsedMask} center / contain no-repeat;
-  transform: ${collapsedTransform};
-  opacity: 1;
-}
-${rvHover} { opacity: 1; }
-
-/* Live Preview — hide Obsidian's default indicators on enabled levels */
-${lpHide},
-${lpHidePlaceholder} { display: none; }
-
-/* Live Preview — chevron widget */
-.markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
-  display: inline-block;
-  width: 0.85em;
-  height: 0.85em;
-  margin-left: 0.35em;
-  vertical-align: -0.12em;
-  opacity: ${idleOpacity};
-  cursor: pointer;
-  background-color: var(--text-muted);
-  -webkit-mask: ${baseMask} center / contain no-repeat;
-  mask: ${baseMask} center / contain no-repeat;
-  transform: ${baseTransform};
-  transition: transform 0.15s ease, opacity 0.1s ease;
-}
-.markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron { opacity: 1; }
-.markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
-  -webkit-mask: ${collapsedMask} center / contain no-repeat;
-  mask: ${collapsedMask} center / contain no-repeat;
-  transform: ${collapsedTransform};
-  opacity: 1;
-}
-`;
-}
-
 export default class AccordionHeadingsPlugin extends Plugin {
   settings: AccordionSettings = { ...DEFAULT_SETTINGS };
-  private styleEl: HTMLStyleElement | null = null;
+  /** Bodies we have added classes to, so they can be cleaned up on unload. */
+  private readonly styledBodies = new Set<HTMLElement>();
 
   async onload(): Promise<void> {
     await this.loadSettings();
-    this.applyStyles();
+    this.applyBodyClasses(document.body);
+
+    // Popout windows get their own <body>; keep them in sync too.
+    this.registerEvent(
+      this.app.workspace.on(
+        "window-open",
+        (_workspaceWindow: WorkspaceWindow, window: Window) => {
+          this.applyBodyClasses(window.document.body);
+        },
+      ),
+    );
 
     this.registerEditorExtension([
       EditorView.domEventHandlers({
@@ -243,10 +180,30 @@ export default class AccordionHeadingsPlugin extends Plugin {
   }
 
   onunload(): void {
-    // The generated stylesheet lives outside Obsidian's lifecycle, so remove it
-    // explicitly or it survives the plugin being disabled.
-    this.styleEl?.remove();
-    this.styleEl = null;
+    for (const body of this.styledBodies) {
+      for (const cls of BODY_CLASSES) body.classList.remove(cls);
+    }
+    this.styledBodies.clear();
+  }
+
+  /** Mirror the current settings onto a document's <body> classes. */
+  private applyBodyClasses(body: HTMLElement): void {
+    if (!body) return;
+    this.styledBodies.add(body);
+
+    for (const cls of BODY_CLASSES) body.classList.remove(cls);
+
+    body.classList.add(
+      this.settings.icon === "chevron" ? "ah-icon-chevron" : "ah-icon-plus",
+    );
+    body.classList.add(
+      this.settings.visibility === "always" ? "ah-vis-always" : "ah-vis-hover",
+    );
+    for (let i = 1; i <= 6; i++) {
+      if (this.settings.levels[`h${i}` as LevelKey]) {
+        body.classList.add(`ah-h${i}`);
+      }
+    }
   }
 
   private buildViewPlugin() {
@@ -317,19 +274,8 @@ export default class AccordionHeadingsPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
-    this.applyStyles();
+    for (const body of this.styledBodies) this.applyBodyClasses(body);
     this.refreshEditors();
-  }
-
-  private applyStyles(): void {
-    this.styleEl?.remove();
-    this.styleEl = null;
-    const css = buildDynamicCss(this.settings);
-    if (!css) return;
-    this.styleEl = document.createElement("style");
-    this.styleEl.id = "accordion-headings-dynamic-styles";
-    this.styleEl.textContent = css;
-    document.head.appendChild(this.styleEl);
   }
 
   private refreshEditors(): void {
@@ -365,6 +311,58 @@ export default class AccordionHeadingsPlugin extends Plugin {
 class AccordionSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: AccordionHeadingsPlugin) {
     super(app, plugin);
+  }
+
+  /** Declarative definitions, so settings show up in Obsidian's settings search (1.13+). */
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    const levels: SettingGroupItem[] = [1, 2, 3, 4, 5, 6].map((i) => ({
+      name: `Heading ${i}`,
+      control: { type: "toggle" as const, key: `h${i}`, defaultValue: true },
+    }));
+
+    return [
+      {
+        name: "Icon style",
+        desc: "The fold indicator icon shown after each heading.",
+        control: {
+          type: "dropdown",
+          key: "icon",
+          defaultValue: "chevron",
+          options: { chevron: "Chevron", plus: "Plus / minus" },
+        },
+      },
+      {
+        name: "Visibility",
+        desc: "When to show the fold indicator.",
+        control: {
+          type: "dropdown",
+          key: "visibility",
+          defaultValue: "always",
+          options: { always: "Always visible", hover: "On hover" },
+        },
+      },
+      {
+        type: "group",
+        heading: "Heading levels",
+        items: levels,
+      },
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    if (/^h[1-6]$/.test(key)) {
+      return this.plugin.settings.levels[key as LevelKey];
+    }
+    return (this.plugin.settings as unknown as Record<string, unknown>)[key];
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    if (/^h[1-6]$/.test(key)) {
+      this.plugin.settings.levels[key as LevelKey] = Boolean(value);
+    } else {
+      (this.plugin.settings as unknown as Record<string, unknown>)[key] = value;
+    }
+    await this.plugin.saveSettings();
   }
 
   display(): void {
@@ -405,7 +403,7 @@ class AccordionSettingTab extends PluginSettingTab {
     });
 
     for (let i = 1; i <= 6; i++) {
-      const key = `h${i}` as keyof AccordionSettings["levels"];
+      const key = `h${i}` as LevelKey;
       new Setting(containerEl)
         .setName(`Heading ${i}`)
         .addToggle((t) =>
