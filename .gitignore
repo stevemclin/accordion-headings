@@ -7,6 +7,9 @@ main.js
 # Exclude sourcemaps
 *.map
 
+# Generated harness page (rebuilt by `npm test`)
+test/index.html
+
 # macOS Finder
 .DS_Store
 

@@ -71,9 +71,9 @@ applied by toggling classes on `<body>` (`ah-h1`…`ah-h6`, `ah-icon-plus`,
   space to its right.
 - **The end of a heading stays editable.** Clicking just after the last character
   places the caret rather than folding; only clicks further right, or on the
-  chevron itself, fold the section. While the caret sits at the end of a heading
-  the indicator steps aside, so it can never draw the caret to the wrong side of
-  the text you are typing.
+  chevron itself, fold the section. The chevron also sits in a zero-width box in
+  Live Preview, so it never takes up layout space and never draws the caret to
+  the wrong side of the text you are typing.
 - **Reading view** draws its indicator with a CSS mask. `-webkit-mask` is
   supported by every Chromium that ships in Obsidian 1.5.0 and later, which is
   this plugin's minimum, so the icons render on every version it installs on.
@@ -83,11 +83,41 @@ applied by toggling classes on `<body>` (`ah-h1`…`ah-h6`, `ah-icon-plus`,
 ```bash
 npm install
 npm run build                                        # typecheck + bundle main.js
+npm test                                             # behaviour harness, headless
 OBSIDIAN_VAULT="/path/to/your/vault" npm run deploy  # copy build into a test vault
 ```
 
-`main.js` is a build artifact and is not committed. Releases are produced by
-`.github/workflows/release.yml` when a version tag is pushed.
+### Testing
+
+`npm test` builds `test/index.html` and runs it in headless Chrome (or Edge, or
+`$CHROME_PATH`). The harness mounts the real editor extension from
+`src/editor.ts` in plain CodeMirror 6 against the shipped `styles.css` and asserts
+the behaviour that is easy to break: the chevron must not displace the caret,
+clicks in the gap after a heading must place the caret, clicks further right and
+on the icon must fold, disabled levels must render nothing, and a settings change
+must rebuild open editors.
+
+Run `npm run test:build` and open `test/index.html` to see the same checks in a
+browser, which is the fastest way to inspect a failure.
+
+### Branch workflow
+
+`master` is release-only. Work on a branch, let CI verify it, merge, then tag:
+
+```bash
+git checkout -b fix/something
+npm test                 # or rely on the PR check
+git push -u origin fix/something
+gh pr create --fill
+```
+
+`.github/workflows/ci.yml` runs the typecheck, the build and the harness on every
+pull request and on pushes to non-`master` branches. Merging to `master` does not
+publish anything by itself — `.github/workflows/release.yml` only cuts a release
+when a version tag is pushed, and it refuses to build if the tag and
+`manifest.json` disagree.
+
+`main.js` is a build artifact and is not committed.
 
 ## License
 

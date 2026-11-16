@@ -9,13 +9,17 @@
  *   ah-vis-always         indicator always visible (default)
  *   ah-vis-hover          indicator only on hover
  *
+ * Reading view draws the indicator on the heading's ::after. Live Preview is a
+ * CodeMirror inline widget: a zero-width box with the icon positioned inside
+ * it, so the chevron never takes up layout width and cannot displace the caret
+ * (see src/editor.ts).
+ *
  * The icons are SVG masks so they stay crisp at any size and take their colour
  * from the theme via `background-color`. The directory's CSS linter mentions
  * "partial support" for CSS masks at Obsidian 1.4.5; that baseline is below this
  * plugin's declared minimum of 1.5.0, and `-webkit-mask` alone is fully supported
  * in every Chromium that Obsidian 1.5+ ships, so the prefixed declaration below
- * covers the whole supported range and the unprefixed one is a forward-looking
- * duplicate (ignored where it isn't implemented).
+ * covers the whole supported range.
  */
 
 body {
@@ -27,8 +31,8 @@ body {
 }
 
 body.ah-icon-plus {
-  --ah-rotate-expanded: none;
-  --ah-rotate-collapsed: none;
+  --ah-rotate-expanded: rotate(0deg);
+  --ah-rotate-collapsed: rotate(0deg);
   --ah-mask-expanded: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='5' y1='12' x2='19' y2='12'/></svg>");
   --ah-mask-collapsed: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg>");
 }
@@ -74,6 +78,51 @@ body.ah-h6 .markdown-preview-view h6 .heading-collapse-indicator .svg-icon {
   display: none;
 }
 
+body.ah-h1 .markdown-preview-view h1::after,
+body.ah-h2 .markdown-preview-view h2::after,
+body.ah-h3 .markdown-preview-view h3::after,
+body.ah-h4 .markdown-preview-view h4::after,
+body.ah-h5 .markdown-preview-view h5::after,
+body.ah-h6 .markdown-preview-view h6::after {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.35em;
+  vertical-align: -0.12em;
+  opacity: var(--ah-idle-opacity);
+  background-color: var(--text-muted);
+  -webkit-mask: var(--ah-mask-expanded) center / contain no-repeat;
+  mask: var(--ah-mask-expanded) center / contain no-repeat;
+  transform: var(--ah-rotate-expanded);
+  transition: transform 0.15s ease, opacity 0.1s ease;
+  pointer-events: none;
+}
+
+/* Collapsed: Obsidian sets `is-collapsed` on the section container, which is an
+   ancestor of the heading. A plain descendant selector is all that's needed, so
+   nothing here causes broad-selector invalidation. */
+body.ah-h1 .markdown-preview-view .is-collapsed h1::after,
+body.ah-h2 .markdown-preview-view .is-collapsed h2::after,
+body.ah-h3 .markdown-preview-view .is-collapsed h3::after,
+body.ah-h4 .markdown-preview-view .is-collapsed h4::after,
+body.ah-h5 .markdown-preview-view .is-collapsed h5::after,
+body.ah-h6 .markdown-preview-view .is-collapsed h6::after {
+  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  transform: var(--ah-rotate-collapsed);
+  opacity: 1;
+}
+
+body.ah-h1 .markdown-preview-view h1:hover::after,
+body.ah-h2 .markdown-preview-view h2:hover::after,
+body.ah-h3 .markdown-preview-view h3:hover::after,
+body.ah-h4 .markdown-preview-view h4:hover::after,
+body.ah-h5 .markdown-preview-view h5:hover::after,
+body.ah-h6 .markdown-preview-view h6:hover::after {
+  opacity: 1;
+}
+
 /* ---------- Live Preview / Source: hide Obsidian's own affordances ---------- */
 
 body.ah-h1 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 .cm-fold-indicator,
@@ -91,57 +140,43 @@ body.ah-h6 .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-foldPlace
   display: none;
 }
 
-/* ---------- Indicator ---------- */
+/* ---------- Live Preview input: zero-width chevron ---------- */
 
-body.ah-h1 .markdown-preview-view h1::after,
-body.ah-h2 .markdown-preview-view h2::after,
-body.ah-h3 .markdown-preview-view h3::after,
-body.ah-h4 .markdown-preview-view h4::after,
-body.ah-h5 .markdown-preview-view h5::after,
-body.ah-h6 .markdown-preview-view h6::after,
+/* The wrapper takes no layout width; the icon is positioned inside it. That is
+   what keeps the caret at the true end of the text instead of jumping past the
+   icon when the caret sits at the end of a heading. */
 .markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
-  content: "";
   display: inline-block;
+  position: relative;
+  width: 0;
+  height: 1em;
+  vertical-align: -0.12em;
+  cursor: pointer;
+}
+
+.markdown-source-view.mod-cm6 .accordion-headings-chevron-icon {
+  position: absolute;
+  left: 0.35em;
+  top: 50%;
   width: 0.85em;
   height: 0.85em;
-  margin-left: 0.35em;
-  vertical-align: -0.12em;
   opacity: var(--ah-idle-opacity);
   background-color: var(--text-muted);
   -webkit-mask: var(--ah-mask-expanded) center / contain no-repeat;
   mask: var(--ah-mask-expanded) center / contain no-repeat;
-  transform: var(--ah-rotate-expanded);
+  transform: translateY(-50%) var(--ah-rotate-expanded);
   transition: transform 0.15s ease, opacity 0.1s ease;
-  pointer-events: none;
 }
 
-.markdown-source-view.mod-cm6 .cm-line .accordion-headings-chevron {
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-/* Collapsed: Obsidian sets `is-collapsed` on the section container, which is an
-   ancestor of the heading. A plain descendant selector is all that's needed, so
-   nothing here causes broad-selector invalidation. */
-body.ah-h1 .markdown-preview-view .is-collapsed h1::after,
-body.ah-h2 .markdown-preview-view .is-collapsed h2::after,
-body.ah-h3 .markdown-preview-view .is-collapsed h3::after,
-body.ah-h4 .markdown-preview-view .is-collapsed h4::after,
-body.ah-h5 .markdown-preview-view .is-collapsed h5::after,
-body.ah-h6 .markdown-preview-view .is-collapsed h6::after,
-.markdown-source-view.mod-cm6 .accordion-headings-chevron.is-collapsed {
-  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
-  mask: var(--ah-mask-collapsed) center / contain no-repeat;
-  transform: var(--ah-rotate-collapsed);
+.markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron-icon {
   opacity: 1;
 }
 
-body.ah-h1 .markdown-preview-view h1:hover::after,
-body.ah-h2 .markdown-preview-view h2:hover::after,
-body.ah-h3 .markdown-preview-view h3:hover::after,
-body.ah-h4 .markdown-preview-view h4:hover::after,
-body.ah-h5 .markdown-preview-view h5:hover::after,
-body.ah-h6 .markdown-preview-view h6:hover::after,
-.markdown-source-view.mod-cm6 .cm-line:hover .accordion-headings-chevron {
+.markdown-source-view.mod-cm6
+  .accordion-headings-chevron.is-collapsed
+  .accordion-headings-chevron-icon {
+  -webkit-mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  mask: var(--ah-mask-collapsed) center / contain no-repeat;
+  transform: translateY(-50%) var(--ah-rotate-collapsed);
   opacity: 1;
 }

@@ -1,12 +1,14 @@
 {
   "name": "accordion-headings",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Website-style accordion folding for headings (Reading, Live Preview, Source).",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "deploy": "node deploy.mjs"
+    "deploy": "node deploy.mjs",
+    "test": "npm run test:build && node test/run-headless.mjs",
+    "test:build": "node test/build.mjs"
   },
   "keywords": [
     "obsidian",
@@ -24,6 +26,7 @@
     "@types/node": "^20.14.0",
     "esbuild": "^0.21.5",
     "obsidian": "latest",
+    "puppeteer-core": "^25.17.0",
     "tslib": "^2.6.3",
     "typescript": "^5.4.5"
   }
