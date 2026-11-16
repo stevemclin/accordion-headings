@@ -54,7 +54,7 @@ section is collapsed.
 
 | Mode | Mechanism |
 |---|---|
-| Reading view | Obsidian already renders a `.heading-collapse-indicator` inside each heading that owns the fold click. The plugin stretches that hit area to cover the whole row, hides its default icon, and draws the indicator on the heading's `::after` using borders and gradients. Collapsed state is read from the `is-collapsed` class Obsidian sets on the heading's section container. |
+| Reading view | Obsidian already renders a `.heading-collapse-indicator` inside each heading that owns the fold click. The plugin stretches that hit area to cover the whole row, hides its default icon, and draws the indicator on the heading's `::after` as an SVG mask, so it stays crisp and picks up the theme's text colour. Collapsed state is read from the `is-collapsed` class Obsidian sets on the heading's section container. |
 | Live Preview / Source | A CodeMirror 6 `ViewPlugin` places a chevron widget at the end of each heading line. Toggling reads the section range from `@codemirror/language`'s `foldable()`, tests it against `foldedRanges()`, then dispatches `foldEffect` or `unfoldEffect` — the same fold state Obsidian's own `.cm-fold-indicator` writes. |
 
 All styling lives in `styles.css` — the plugin never injects CSS. Your settings are
@@ -69,8 +69,9 @@ applied by toggling classes on `<body>` (`ah-h1`…`ah-h6`, `ah-icon-plus`,
   folding. This is deliberate — the plugin lives inside an editor, and stealing
   text clicks would make headings awkward to edit. Use the chevron, or the empty
   space to its right.
-- **Reading view** depends on CSS `:has()`, which is available in every Obsidian
-  version this plugin supports.
+- **Reading view** draws its indicator with a CSS mask. `-webkit-mask` is
+  supported by every Chromium that ships in Obsidian 1.5.0 and later, which is
+  this plugin's minimum, so the icons render on every version it installs on.
 
 ## Development
 
