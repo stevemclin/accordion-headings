@@ -196,19 +196,29 @@ async function run() {
       `head=${v.state.selection.main.head}, line.to=${line.to}`,
     );
 
-    // The visible gap between the last character and the icon is 0.35em; every
-    // click inside it must place the caret rather than fold. Clicks that land on
-    // the icon itself are a different case (the icon is the fold button).
+    // Every click strictly inside the visible gap must place the caret. Measure
+    // the gap from the icon's real rect rather than assuming em rounding, and
+    // stay off the icon's edge — that last pixel is the fold button's.
+    const iconRect = v.dom
+      .querySelector<HTMLElement>(".accordion-headings-chevron-icon")!
+      .getBoundingClientRect();
+    const gapPx = iconRect.left - end.right;
+    const points = [1, Math.max(1, Math.floor(gapPx * 0.6))];
     const gap: number[] = [];
-    for (const dx of [1, 3, 5]) {
+    for (const dx of points) {
       clickAt(v, end.right + dx, y);
       await nextFrame();
       gap.push(foldCount(v));
     }
     check(
+      "there is a clickable gap before the icon",
+      gapPx >= 3,
+      `gap = ${gapPx.toFixed(1)}px`,
+    );
+    check(
       "clicks inside the gap before the icon place the caret",
       gap.every((f) => f === 0) && v.state.selection.main.head === line.to,
-      `fold counts ${gap.join(",")}, head=${v.state.selection.main.head}`,
+      `clicked at +${points.join(",+")}px, fold counts ${gap.join(",")}, head=${v.state.selection.main.head}`,
     );
   }
 
