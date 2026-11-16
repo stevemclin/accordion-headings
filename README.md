@@ -69,6 +69,11 @@ applied by toggling classes on `<body>` (`ah-h1`…`ah-h6`, `ah-icon-plus`,
   folding. This is deliberate — the plugin lives inside an editor, and stealing
   text clicks would make headings awkward to edit. Use the chevron, or the empty
   space to its right.
+- **The end of a heading stays editable.** Clicking just after the last character
+  places the caret rather than folding; only clicks further right, or on the
+  chevron itself, fold the section. While the caret sits at the end of a heading
+  the indicator steps aside, so it can never draw the caret to the wrong side of
+  the text you are typing.
 - **Reading view** draws its indicator with a CSS mask. `-webkit-mask` is
   supported by every Chromium that ships in Obsidian 1.5.0 and later, which is
   this plugin's minimum, so the icons render on every version it installs on.

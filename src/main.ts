@@ -23,6 +23,12 @@ import { foldEffect, foldable, foldState, unfoldEffect } from "@codemirror/langu
 const HEADING_RE = /^(#{1,6})\s/;
 
 /**
+ * How far past the heading text a click still counts as "put the caret here"
+ * rather than "fold this section", in CSS pixels.
+ */
+const CARET_ZONE_PX = 8;
+
+/**
  * All styling lives in styles.css and is gated by these classes on <body>.
  * The plugin only toggles classes, so no CSS is injected at runtime.
  */
@@ -221,6 +227,7 @@ export default class AccordionHeadingsPlugin extends Plugin {
           const relevant =
             update.docChanged ||
             update.viewportChanged ||
+            update.selectionSet ||
             update.transactions.some((tr) =>
               tr.effects.some(
                 (e) =>
@@ -245,6 +252,13 @@ export default class AccordionHeadingsPlugin extends Plugin {
               if (!foldRange) continue;
 
               const line = view.state.doc.line(n);
+              // The chevron is an inline widget at the line's end position, so
+              // when the caret sits at that exact position CodeMirror has to
+              // draw the caret on one side of it — and with side: -1 it lands on
+              // the far side, leaving a caret that does not match the text
+              // position. Step the widget aside while the caret is there.
+              if (view.state.selection.main.head === line.to) continue;
+
               const collapsed = isRangeFolded(view.state, foldRange);
 
               builder.add(
@@ -300,8 +314,18 @@ export default class AccordionHeadingsPlugin extends Plugin {
       return false;
     }
 
-    const trimmedEnd = line.from + line.text.replace(/\s+$/, "").length;
-    if (pos < trimmedEnd) return false; // on the text → normal editing
+    // Clicking on the text is editing. So is the strip immediately after the
+    // last character — that is where people click to keep typing, and hijacking
+    // it to fold makes the heading impossible to edit from the end. Only clicks
+    // further right, or on the chevron itself, fold.
+    const textEnd = view.coordsAtPos(line.to, -1);
+    if (textEnd) {
+      if (event.clientX <= textEnd.right + CARET_ZONE_PX) return false;
+    } else {
+      // Layout not measurable right now: fall back to the position test.
+      const trimmedEnd = line.from + line.text.replace(/\s+$/, "").length;
+      if (pos < trimmedEnd) return false;
+    }
 
     toggleHeadingFold(view, line.number, this.settings);
     return true;
